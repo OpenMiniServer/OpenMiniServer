@@ -1,0 +1,3 @@
+[submodule "open/openthread"]
+	path = open/openthread
+	url = https://github.com/openlinyou/openthread.git

@@ -1,3 +1,19 @@
 [submodule "open/openthread"]
 	path = open/openthread
 	url = https://github.com/openlinyou/openthread.git
+
+[submodule "open/opensocket"]
+	path = open/opensocket
+	url = https://github.com/openlinyou/opensocket.git
+[submodule "open/opencsv"]
+	path = open/opencsv
+	url = https://github.com/openlinyou/opencsv
+[submodule "open/openfsm"]
+	path = open/openfsm
+	url = https://github.com/openlinyou/openfsm
+[submodule "open/opentime"]
+	path = open/opentime
+	url = https://github.com/openlinyou/opentime.git
+[submodule "open/openjson"]
+	path = open/openjson
+	url = https://github.com/openlinyou/openjson.git

@@ -71,8 +71,6 @@ demo             // 测试例子源代码
 open             // OpenMiniServer的全部源代码
 CMakeLists.txt   // CMake的主工程文件
 ```
-external是一些第三方库源代码的zip包，OpenMiniServer对它们没有依赖，只是方便其他人下载常用的库。
-
 如果OpenMiniServer需要使用https功能，就需要导入openssl库，并加入编译宏定义USE_OPEN_SSL，即可。
 
 

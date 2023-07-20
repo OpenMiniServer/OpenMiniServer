@@ -47,7 +47,6 @@ Source code：https://github.com/OpenMiniServer/OpenMiniServer
 #Clone the project
 git clone https://github.com/OpenMiniServer/OpenMiniServer
 cd ./OpenMiniServer
-#创建build工程目录
 #Create a build project directory
 mkdir build
 cd build

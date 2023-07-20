@@ -1,33 +1,33 @@
-## OpenMiniServer超迷你简单的C++高并发跨平台框架
-OpenMiniServer是一款超迷你、 超易用、 Actor模型的高性能服务器框架，支持高并发和跨全平台。
+## OpenMiniServer
+OpenMiniServer是一个超迷你、 超易用的C++高并发跨平台服务器框架。它基于Actor模型，提供了高性能的服务器功能，支持高并发和跨平台。
 
-C++服务器框架很多，但是比较笨重，依赖库比较多，而且跨平台不太友好。
+与其他C++服务器框架相比，OpenMiniServer更加轻量级，依赖更少的第三方库，对跨平台的支持也特别友好。
 
-OpenMiniServer的目标是使用一种更简单更轻量的方式去开发C++服务器程序，尽可能减少依赖第三方库，用非常少的C++代码去实现高性能高并发的服务器项目，为了可以在任意平台开发项目，采用CMake构建，跨平台设计。做到一份代码可以在任意平台上开发，也可以运行在任意平台上。
+OpenMiniServer的目标是用尽可能少的C++代码实现高性能、高并发的服务器项目。它使用CMake构建系统实现跨平台支持，使同一份代码可以在不同的平台上开发和编译运行。可以在Windows环境下开发，无需要改动，就可以在Linux上编译出功能一样的程序。
 
-OpenMiniServer主要使用OpenSocket和OpenThread等开源项目实现，而这些开源项目为OpenMiniServer项目专门开发的。
+为了开发OpenMiniServer开源项目，从零开发设计各基础库，如高并发socket库-OpenSocket、多线程库-OpenThread等。
 
-OpenSocket是一个高性能复用IO库，是OpenMiniServer实现网络高并发的核心。
-而采用OpenThread可以轻松实现Actor模式，Actor设计模式可以大大简化服务器业务开发，可以非常容易监控各个功能模块的性能，快速实现多核处理。
-
-
-### 技术特点
-1. 迷你小巧，专门设计了网络库和多线程库，代码量很少，却可以实现C++服务器开发；
-2. 跨平台设计，使用CMake管理工程，一份代码可以在任意平台开发，也可以运行在任意平台上；
-3. Actor模型，非常容易实现快速多核处理，配合Nginx使用，非常容易建立服务器集群；
-4. 开发环境部署简单，没有太多第三方依赖库，Actor模式服务器框架一旦熟悉以后，都非常容易使用。
+OpenSocket是一个高性能的可复用IO库，是实现网络高并发的关键。OpenThread实现了Actor模式,大大简化了服务器业务逻辑的开发,可以轻松实现多核支持。
 
 
 ### 技术架构
-OpenThread默认设置固定的256个线程容量池，这些线程容量池通过智能指针实现无锁访问操作。
-创建一个OpenThread对象，并对它进行启动，就可以启动一条线程，并把它加入到容量池中，需要注意不能超过容量池的容量。
-通过条件锁，实现不同OpenThread对象之间的多线程通信，从而实现Actor模式机制。
+1. 线程处理
+OpenThread采用固定大小线程池实现高效线程管理。结合智能指针的线程安全特性，实现了OpenThread对象的无锁访问。
 
-OpenServer类继承OpenThread，按照Actor模式进行实现和封装。服务器的业务逻辑就可以分布运行在这些OpenServer对象上。
+每个OpenThread对象在创建启动时，会创建一条线程并加入线程池中，以便统一管理该线程及其业务逻辑。
+服务器计算业务根据CPU负载进行拆分，分发到多个OpenThread对象上，从而实现多核处理。
 
-OpenSocket是一个高性能socket库，实现网络消息交换，一条socket链接绑定一个OpenServer对象，通过OpenThread的多线程通信机制，就可以把网络消息发到绑定的OpenServer对象上。
+OpenThread通过条件锁实现线程间安全通信，构建Actor模型。多个OpenThread对象通过线程通信进行协作，处理复杂业务逻辑，实现简化开发工作，应对服务器高压处理业务需求。
 
-OpenMiniServer的机制就是这么简单迷你。
+OpenServer类是OpenMiniServer的核心类，它继承OpenThread，在OpenThread的基础上按照Actor模型进一步封装设计，提供更多便利的统一的接口。
+
+2. 网络处理
+OpenSocket是高性能socket库，提供高性能网络通信服务。请求socket服务时可以指定sessionID，OpenSocket返回网络消息就会携带此sessionID，根据sessionID可以把网络消息分发给申请者。
+
+3. 线程与网络结合
+每个OpenServer对象拥有唯一ID，把这个唯一ID当作sessionID处理，向OpenSocket请求socket服务，返回的网络消息会携带此ID，根据此ID可以找到OpenServer对象，把网络消息发给该OpenServer对象。
+
+这就是OpenMiniServer框架的主要工作流，非常简单。
 
 
 ### 测试例子
@@ -65,15 +65,13 @@ code,time,price
 ```
 
 #### 2.项目文件
-项目根目录文件很少，符合设计目标，尽可能简单。
+项目根目录文件很少，符合尽可能简单的设计目标。
 ```
 demo             // 测试例子源代码
 open             // OpenMiniServer的全部源代码
 CMakeLists.txt   // CMake的主工程文件
 ```
-external是一些第三方库源代码的zip包，OpenMiniServer对它们没有依赖，只是方便其他人下载常用的库。
-
-如果OpenMiniServer需要使用https功能，就需要导入openssl库，并加入编译宏定义USE_OPEN_SSL，即可。
+如果OpenMiniServer需要使用https功能，就需要导入OpenSSL库，并加入编译宏定义USE_OPEN_SSL，即可。
 
 
 #### 3.测试例子介绍
@@ -86,19 +84,19 @@ app.h      // 唯一应用实例头文件 继承 open::OpenApp
 app.cpp    // 唯一应用实例实现文件
 ```
 
-demo/server有3个模块，centor、httpd和stock，它们最终继承OpenServer类，相当于有3种Actor，每种专门服务某种业务。
-虽然它们的类名都一样，但可以靠namespace去区分，这样处理是方便开发写代码效率。
+demo/server有3个模块，centor、httpd和stock，它们最终继承OpenServer类，相当于有3种Actor，每种定制某种业务。
+虽然它们的类名都一样，但可以靠namespace去区分，这样处理可以提高写代码效率。
 
 1. stock模块主要负责下载股票数据，下载完就返回一条消息给请求者，它继承OpenHttpClient，拥有请求http功能；
 
-2. centor模块主要负责控制，向stock模块发消息，请求股票数据，然后收到股票数据，做处理，把json格式转成csv；
+2. centor模块主要负责控制，向stock模块发消息请求股票数据，然后收到股票数据后，把json格式的数据转成csv格式的数据；
 
-3. httpd模块是web服务，提供数据下载业务。它有两种OpenServer，一种是httpa, 它继承OpenHttpAgent，可以接收和发送客户端的数据；
-另一种是httpd，它继承OpenHttpServer，负责监听客户端连接，然后把连接发给httpa处理。
+3. httpd模块负责web服务，提供数据下载业务。
+它有两种OpenServer，一种是httpa，继承OpenHttpAgent，可以处理接收和发送网络消息；另一种是httpd，继承OpenHttpServer，负责监听客户端连接，然后把连接发给httpa处理。
 
-4. 只是展示测试效果，所以stock模块是向httpd模块网络请求数据。
+4. stock模块通过web请求向httpd模块下载股票数据。
 
-5. 上述只是定义了各种OpenServer，接下来需要对它们进行启动。
+5. 不同的业务，需要设计不同的OpenServer子类，把它们注册到OpenServerPool中，才能对它们进行启动，启动OpenServer的内部线程。
 open::OpenApp负责这个事情，需要先对三种模块进行注册，每个模块绑定一个名字，然后用这个名字进行启动。
 
 ```C++
@@ -112,7 +110,9 @@ open::OpenServer::StartServer("stock", "stock2", "");
 ```
 
 ##### 1.app源代码
+App继承open::OpenApp，是一个单例类，主要负责注册OpenServer，然后对它们进行启动。
 ```C++
+//导入centor、httpd和stock三个模块的头文件
 #include "server/stock/server.h"
 #include "server/httpd/httpa.h"
 #include "server/httpd/httpd.h"
@@ -136,7 +136,7 @@ public:
         open::OpenServer::RegisterServer<stock::Server>("stock");
         open::OpenServer::RegisterServer<centor::Server>("centor");
 
-        //启动4个httpa::Server对象，负责与客户端接收和发送http消息
+        //启动4个httpa::Server对象，负责接收和发送客户端的网络消息
         open::OpenServer::StartServer("httpa", "httpa1", "");
         open::OpenServer::StartServer("httpa", "httpa2", "");
         open::OpenServer::StartServer("httpa", "httpa3", "");
@@ -145,16 +145,16 @@ public:
         //启动1个httpa::Server对象，负责监听客户端连接，并把连接发给httpa::Server对象处理
         open::OpenServer::StartServer("httpd", "httpd", "");
 
-        //启动2个stock::Server对象，可以两条线程处理业务，如果业务很大，CPU核数很多，可以多创建几个。
+        //启动2个stock::Server对象，可以两条线程负债均衡处理同一业务，如果业务很大，CPU核数很多，可以多创建几个。
         open::OpenServer::StartServer("stock", "stock1", "");
         open::OpenServer::StartServer("stock", "stock2", "");
 
         //启动1个centor::Server对象
         open::OpenServer::StartServer("centor", "centor", "");
 
-        //上述只是创建OpenServer，接下来对它们真正启动，创建线程，处理各自的业务
+        //上述只是创建OpenServer，接下来启动它们，创建线程，处理各自的业务
         open::OpenServer::RunServers();
-        printf("start OpenMiniServer complete!\n");
+        printf("Start OpenMiniServer complete!\n");
     }
 };
 //应用实例对象
@@ -162,39 +162,40 @@ App App::TheApp_;
 ```
 
 三种模块centor、httpd和stock，它们最终继承OpenServer类，而OpenServer类继承了OpenThread，也就是每个模块对象都有一条专属线程处理业务，无需考虑多线程问题。
-每个模块对象是独立公平的，它们各自处理自己的事情，当需要协作的时候，只要互相发送消息即可。
+每个OpenServer对象都是独立的，它们各自处理各自的事情，当需要协作时，只要互相发送消息即可。
 
 接下来实现各个模块的源代码
 ##### 2.stock模块源代码
 
+stock模块其实就是一个http请求客户端，OpenMiniServer提供了open::OpenHttpClient模块，可以简单实现http请求功能。
 ```C++
 #include "open.h"
 #include "msg/msg.h"
 //用域名空间的名字来区分模块，模块名叫stock
 namespace stock
 {
-// 继承open::OpenHttpClient，拥有请求http的能力
+// 继承open::OpenHttpClient，拥有请求http的能力，open::OpenHttpClient继承OpenServer
 class Server : public open::OpenHttpClient
 {
-	typedef std::function<void(open::OpenHttpRequest&, open::OpenHttpResponse&)> HttpHandle;
+    typedef std::function<void(open::OpenHttpRequest&, open::OpenHttpResponse&)> HttpHandle;
 public:
-	Server(const std::string& name, const std::string& args)
-		:open::OpenHttpClient(name, args)
-	{
-		sessionId_ = 0;
-	}
-	virtual ~Server() {}
+    Server(const std::string& name, const std::string& args)
+        :open::OpenHttpClient(name, args)
+    {
+        sessionId_ = 0;
+    }
+    virtual ~Server() {}
 
-	//每个模块都需要实现New函数，否则open::OpenServer::StartServer运行失败
-	static OpenServer* New(const std::string& serverName, const std::string& args)
-	{
-		return new Server(serverName, args);
-	}
+    //每个模块都需要实现New函数，否则open::OpenServer::StartServer启动会失败
+    static OpenServer* New(const std::string& serverName, const std::string& args)
+    {
+        return new Server(serverName, args);
+    }
 
-	//它的父类OpenServer 启动以后，会启动它的线程，此线程启动成功，就会调用onStart方法
-	virtual void onStart() {}
+    //它的父类OpenServer 启动以后，会启动它的线程，此线程启动成功，就会调用onStart方法
+    virtual void onStart() {}
 
-	//业务方法，请求股票数据，并通过回调函数返回结果
+    //业务方法，请求股票数据，并通过回调函数返回结果
     bool reqStockData(const std::string& code, const HttpHandle& cb)
     {
         auto request = std::shared_ptr<open::OpenHttpRequest>(new open::OpenHttpRequest);
@@ -223,12 +224,11 @@ public:
     //其他模块发送过来的消息。
     virtual void onMsgProto(open::OpenMsgProto& proto)
     {
-    	//接收处理centor模块的消息，请求股票数据
+        //接收处理centor模块的消息，请求股票数据
         if (StockRequestStockMsg::MsgId() == proto.msg_->msgId())
         {
             std::shared_ptr<StockRequestStockMsg> protoMsg = std::dynamic_pointer_cast<StockRequestStockMsg>(proto.msg_);
-            if (!protoMsg)
-            {
+            if (!protoMsg) {
                 assert(false); return;
             }
             //请求股票数据，http结果通过std::function返回
@@ -241,8 +241,8 @@ public:
         }
     }
 protected:
-	int sessionId_;
-	std::unordered_map<int, HttpHandle> mapHttpCalls_;
+    int sessionId_;
+    std::unordered_map<int, HttpHandle> mapHttpCalls_;
 };
 
 };
@@ -250,6 +250,7 @@ protected:
 ```
 
 ##### 3.centor模块源代码
+centor模块是一个controller角色。
 ```C++
 #include "open.h"
 #include "msg/msg.h"
@@ -260,21 +261,21 @@ namespace centor
 class Server : public open::OpenServer
 {
 public:
-	Server(const std::string& name, const std::string& args)
-		:open::OpenServer(name, args){}
+    Server(const std::string& name, const std::string& args)
+        :open::OpenServer(name, args){}
 
-	virtual ~Server() {}
+    virtual ~Server() {}
 
-	//每个模块都需要实现New函数，否则open::OpenServer::StartServer运行失败
-	static OpenServer* New(const std::string& serverName, const std::string& args)
-	{
-		return new Server(serverName, args);
-	}
+    //每个模块都需要实现New函数，否则open::OpenServer::StartServer启动失败
+    static OpenServer* New(const std::string& serverName, const std::string& args)
+    {
+        return new Server(serverName, args);
+    }
 
-	//它的父类open::OpenServer启动以后，会启动它的线程，此线程启动成功，就会调用onStart方法
+    //它的父类open::OpenServer启动以后，会启动它的线程，此线程启动成功，就会调用onStart方法
     void onStart()
     {
-    	//创建消息，请求指数399001的数据，在stock模块，有对它的处理
+        //创建消息，请求指数399001的数据，在stock模块，有对它的处理
         auto protoMsg = std::shared_ptr<StockRequestStockMsg>(new StockRequestStockMsg);
         protoMsg->code_ = "399001";
         //把消息发给"stock1"绑定的对象。当然，也可以发给"stock2"，看谁比较空闲。
@@ -325,7 +326,7 @@ protected:
 ```
 
 ##### 4.httpd模块源代码
-这个模块，有两种OpenServer：httpd和httpa。
+这个模块，有两种OpenServer：httpd和httpa，分别负责监听（listen）和处理业务（accept）。负责web下载服务。
 
 httpd源代码
 ```C++
@@ -338,16 +339,16 @@ namespace httpd
 class Server : public open::OpenHttpServer
 {
 public:
-	Server::Server(const std::string& name, const std::string& args)
-		:open::OpenHttpServer(name, args){}
-	virtual ~Server() {}
-	static OpenServer* New(const std::string& serverName, const std::string& args)
-	{
-		return new Server(serverName, args);
-	}
-	virtual void onStart()
+    Server::Server(const std::string& name, const std::string& args)
+        :open::OpenHttpServer(name, args){}
+    virtual ~Server() {}
+    static OpenServer* New(const std::string& serverName, const std::string& args)
     {
-    	//创建消息，启动http监听：0.0.0.0:8080
+        return new Server(serverName, args);
+    }
+    virtual void onStart()
+    {
+        //创建消息，启动http监听：0.0.0.0:8080
         auto msg = std::shared_ptr<open::OpenHttpServerMsg>(new open::OpenHttpServerMsg);
         msg->ip_ = "0.0.0.0";
         //在CMakeLists.txt打开这个宏定义，可提供HTTPS服务，但编译的时候需要导入OpenSSL库
@@ -475,32 +476,32 @@ public:
 class Server : public open::OpenHttpAgent
 {
 public:
-	Server(const std::string& name, const std::string& args)
-		:open::OpenHttpAgent(name, args)
-	{
-	}
-	virtual ~Server() {}
-	static OpenServer* New(const std::string& serverName, const std::string& args)
-	{
-		return new Server(serverName, args);
-	}
+    Server(const std::string& name, const std::string& args)
+        :open::OpenHttpAgent(name, args)
+    {
+    }
+    virtual ~Server() {}
+    static OpenServer* New(const std::string& serverName, const std::string& args)
+    {
+        return new Server(serverName, args);
+    }
 
-	virtual void onStart() {}
+    virtual void onStart() {}
 
-	//处理客户端的http请求
-	virtual void onHttp(open::OpenHttpRequest& req, open::OpenHttpResponse& rep)
-	{
-		handle_.onCallBack(&req, &rep);
-	}
+    //处理客户端的http请求
+    virtual void onHttp(open::OpenHttpRequest& req, open::OpenHttpResponse& rep)
+    {
+        handle_.onCallBack(&req, &rep);
+    }
 protected:
-	Handle handle_;
+    Handle handle_;
 };
 
 };
 ```
 
 ##### 4.OpenSocket和OpenThread的结合
-在open::OpenApp::SocketFun处理OpenSocket的消息
+在open::OpenApp::SocketFun方法中，处理OpenSocket的消息
 
 ```C++
 //把OpenSocket的消费派发给绑定的OpenServer
@@ -513,6 +514,7 @@ void OpenApp::SocketFunc(const OpenSocketMsg* msg)
         proto->srcPid_ = -1;
         proto->srcName_ = "OpenSocket";
         proto->data_ = std::shared_ptr<OpenSocketMsg>((OpenSocketMsg*)msg);
+        //msg->uid_ 是请求者OpenServer的ID
         if (!OpenThread::Send((int)msg->uid_, proto))
             printf("SocketFunc dispatch faild pid = %d\n", (int)msg->uid_);
     }
@@ -530,6 +532,16 @@ void OpenApp::start()
 
 ```
 
-#### 4.最后
-OpenMiniServer是一款超迷你、 超简单、 Actor模型的高并发和跨全平台的C++服务器框架。
+
+### 技术特点
+1. OpenMiniServer极为轻巧简洁,通过自主设计的网络库和多线程库实现高性能服务器功能,代码量非常少却能发挥强大效果。
+
+2. 采用CMake跨平台构建系统,实现写一次代码,随处编译运行的跨平台支持,不受限于特定系统环境。
+
+3. 基于Actor模型设计,可以轻松实现高效的多核并行处理,配合Nginx负载均衡,可以便捷构建高可用的服务器集群。
+
+4. 开发环境部署极为简单,第三方依赖库很少,一旦掌握Actor模型,使用OpenMiniServer构建服务器会变得非常容易。
+
+总体来说, OpenMiniServer是一个迷你、轻巧、高效、跨平台的C++服务器框架，非常适合需要快速构建复杂服务器项目的开发者。它极简的代码风格和Actor模式设计可以提高开发效率，是值得推荐的高性能服务器解决方案。
+
 

@@ -1,7 +1,7 @@
 
 #include "openhttpslib.h"
-#include "openstring.h"
-#include "opensocket.h"
+#include "../../openstring.h"
+#include "../../opensocket.h"
 
 namespace open
 {

@@ -70,11 +70,11 @@ namespace open
 
  class OpenSpinLock
  {
-     std::atomic_flag flag_;
+     std::atomic_flag flag_ = ATOMIC_FLAG_INIT;
      OpenSpinLock(const OpenSpinLock&) {};
      void operator=(const OpenSpinLock) {};
  public:
-     OpenSpinLock() {};
+     OpenSpinLock() {}
      void lock() { while (flag_.test_and_set(std::memory_order_acquire)); }
      void unlock() { flag_.clear(std::memory_order_release); }
  };

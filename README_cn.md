@@ -496,7 +496,6 @@ public:
 protected:
     Handle handle_;
 };
-
 };
 ```
 

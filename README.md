@@ -180,8 +180,7 @@ When they need to collaborate, they simply send messages to each other.
 Next we will look at the source code implementation of each module. 
 
 ##### 2.Stock module source code 
-
-stock模块其实就是一个http请求客户端，OpenMiniServer提供了open::OpenHttpClient模块，可以简单实现http请求功能。
+The stock module is actually an HTTP request client. OpenMiniServer provides the open::OpenHttpClient module, which can simply implement HTTP request functionality.
 ```C++
 #include "open.h"
 #include "msg/msg.h"
@@ -341,8 +340,6 @@ protected:
 ```
 
 ##### 4.Httpd module source code 
-这个模块，有两种OpenServer：httpd和httpa，分别负责监听（listen）和处理业务（accept）。负责web下载服务。
-
 This module has two OpenServers: httpd and httpa, responsible for listening and handling business logic separately. It is responsible for web download services.
 httpd listens for incoming requests.
 httpa accepts and processes requests.

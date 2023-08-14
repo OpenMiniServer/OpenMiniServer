@@ -55,6 +55,7 @@ public:
 ////////////OpenHttpAgent//////////////////////
 class OpenHttpAgent : public OpenSocketServer
 {
+protected:
     struct Client
     {
         int fd_;

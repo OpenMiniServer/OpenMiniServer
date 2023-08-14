@@ -23,6 +23,7 @@ namespace open
 ////////////OpenHttpClient//////////////////////
 class OpenHttpClient : public OpenSocketServer
 {
+protected:
     struct Client
     {
         int fd_;

@@ -71,11 +71,12 @@ class OpenHttpAgent : public OpenSocketServer
         OpenWriteFile cacheSendFile_;
         bool isCreateReceiveFile_;
         OpenWriteFile cacheReceiveFile_;
-
+        bool isSendData_;
         Client();
         ~Client();
         bool start();
         void sendClient();
+        void processing();
         void sendResponse();
         void sendRawBuffer();
         void sendBuffer();
@@ -107,7 +108,7 @@ public:
     {
         return new OpenHttpAgent(serverName, args);
     }
-    virtual void onHttp(OpenHttpRequest& req, OpenHttpResponse& rep);
+    virtual bool onHttp(OpenHttpRequest& req, OpenHttpResponse& rep);
 };
 
 

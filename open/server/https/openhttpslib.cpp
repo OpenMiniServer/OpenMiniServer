@@ -161,7 +161,10 @@ void OpenHttp::parseUrl()
 
 const std::string& OpenHttp::lookIp()
 {
-    ip_ = OpenSocket::DomainNameToIp(domain_);
+    if (ip_.empty())
+    {
+        ip_ = OpenSocket::DomainNameToIp(domain_);
+    }
     return ip_;
 }
 
@@ -760,6 +763,62 @@ bool OpenHttp::responseData(const char* data, size_t size)
 void OpenHttpResponse::decodeReqHeader()
 {
     OpenHttp::decodeReqHeader();
+}
+
+void OpenHttpResponse::init()
+{
+    port_ = 80;
+    headers_["server"] = "OpenMiniServer/1.0";
+    headers_["accept-ranges"] = "bytes";
+
+    OpenTime openTime;
+    headers_["date"] = openTime.toGMT();
+    //headers_["connection"] = "keep-alive";
+    headers_["connection"] = "close";
+}
+void OpenHttpResponse::response(const char* ctype, const char* buffer, size_t len)
+{
+    code_ = 200;
+    body_.pushBack(buffer, len);
+    headers_["content-type"] = GetContentType(ctype);
+}
+void OpenHttpResponse::response(const char* ctype, const std::string& buffer)
+{
+    code_ = 200;
+    body_.pushBack(buffer);
+    headers_["content-type"] = GetContentType(ctype);
+}
+void OpenHttpResponse::response(int code, const std::string& ctype, const std::string& buffer)
+{
+    code_ = code;
+    body_.pushBack(buffer);
+    headers_["content-type"] = GetContentType(ctype.data());
+}
+void OpenHttpResponse::response404Html()
+{
+    response(".html", "<html><body><h1>404</h1><p>Sorry, We can't provide this service! By OpenLinyou</p></body></html>");
+}
+const std::string OpenHttpResponse::GetContentType(const char* fileExt)
+{
+    auto iter = ContentTypes_.find(fileExt);
+    if (iter != ContentTypes_.end())
+    {
+        return iter->second;
+    }
+    return fileExt;
+}
+
+void OpenHttpResponse::send()
+{
+    auto proto = std::shared_ptr<OpenMsgProto>(new OpenMsgProto);
+    proto->srcPid_ = pid_;
+
+    //proto->srcName_ = "OpenSocket";
+    auto protoMsg = std::shared_ptr<OpenHttpSendResponseMsg>(new OpenHttpSendResponseMsg);
+    protoMsg->fd_ = fd_;
+    proto->msg_ = protoMsg;
+    if (!OpenServer::Send((int)pid_, proto))
+        printf("penHttpResponse::send faild pid = %d\n", (int)pid_);
 }
 
 ////////////OpenHttpRequest//////////////////////

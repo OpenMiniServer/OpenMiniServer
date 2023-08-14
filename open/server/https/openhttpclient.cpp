@@ -1,4 +1,7 @@
-
+//#include <map>
+//#include <set>
+//#include <memory>
+//#include <string.h>
 #include "openhttpclient.h"
 
 namespace open
@@ -40,6 +43,10 @@ bool OpenHttpClient::Client::start(std::shared_ptr<OpenHttpClientMsg>& clientMsg
 #ifndef USE_OPEN_SSL
     assert(!request->isHttps_);
 #endif
+    request->fd_ = fd_;
+    request->pid_ = pid_;
+    request->rep()->fd_ = fd_;
+    request->rep()->pid_ = pid_;
     if (!request->isHttps_)
         tls_ = 0;
     else

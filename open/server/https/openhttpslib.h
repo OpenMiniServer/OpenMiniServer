@@ -24,6 +24,8 @@ namespace open
 ////////////OpenHttp//////////////////////
 struct OpenHttp
 {
+    int fd_;
+    int pid_;
     int uid_;
     int code_;
     int64_t clen_;
@@ -90,48 +92,13 @@ struct OpenHttpResponse : public OpenHttp
 {
     OpenHttpResponse() : OpenHttp() { isReq_ = false; }
     virtual void decodeReqHeader();
-    void init()
-    {
-        port_ = 80;
-        headers_["server"] = "OpenMiniServer/1.0";
-        headers_["accept-ranges"] = "bytes";
-
-        OpenTime openTime;
-        headers_["date"] = openTime.toGMT();
-        //headers_["connection"] = "keep-alive";
-        headers_["connection"] = "close";
-    }
-    void response(const char* ctype, const char* buffer, size_t len)
-    {
-        code_ = 200;
-        body_.pushBack(buffer, len);
-        headers_["content-type"] = GetContentType(ctype);
-    }
-    void response(const char* ctype, const std::string& buffer)
-    {
-        code_ = 200;
-        body_.pushBack(buffer);
-        headers_["content-type"] = GetContentType(ctype);
-    }
-    void response(int code, const std::string& ctype, const std::string& buffer)
-    {
-        code_ = code;
-        body_.pushBack(buffer);
-        headers_["content-type"] = GetContentType(ctype.data());
-    }
-    void response404Html()
-    {
-        response(".html", "<html><body><h1>404</h1><p>Sorry, We can't provide this service! By OpenLinyou</p></body></html>");
-    }
-    static const std::string GetContentType(const char* fileExt)
-    {
-        auto iter = ContentTypes_.find(fileExt);
-        if (iter != ContentTypes_.end())
-        {
-            return iter->second;
-        }
-        return fileExt;
-    }
+    void init();
+    void response(const char* ctype, const char* buffer, size_t len);
+    void response(const char* ctype, const std::string& buffer);
+    void response(int code, const std::string& ctype, const std::string& buffer);
+    void response404Html();
+    void send();
+    static const std::string GetContentType(const char* fileExt);
 private:
     static const std::map<std::string, std::string> ContentTypes_;
 };
@@ -156,7 +123,7 @@ public:
     int listenPort_;
 };
 
-typedef void (*OpenHttpHandle)(OpenHttpRequest&, OpenHttpResponse&);
+typedef bool (*OpenHttpHandle)(OpenHttpRequest&, OpenHttpResponse&);
 
 ////////////OpenHttpClientMsg//////////////////////
 struct OpenHttpClientMsg : public OpenMsgProtoMsg
@@ -259,6 +226,15 @@ struct OpenHttpNoticeMsg : public OpenMsgProtoMsg
 
     static inline int MsgId() { return (int)(int64_t)(void*)&MsgId; }
     virtual inline int msgId() const { return OpenHttpNoticeMsg::MsgId(); }
+};
+
+////////////OpenHttpSendResponseMsg//////////////////////
+struct OpenHttpSendResponseMsg : public OpenMsgProtoMsg
+{
+    int fd_;
+
+    static inline int MsgId() { return (int)(int64_t)(void*)&MsgId; }
+    virtual inline int msgId() const { return OpenHttpSendResponseMsg::MsgId(); }
 };
 
 };

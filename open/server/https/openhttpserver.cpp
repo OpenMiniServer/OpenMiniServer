@@ -1,4 +1,7 @@
-
+//#include <map>
+//#include <set>
+//#include <memory>
+//#include <string.h>
 #include "openhttpserver.h"
 
 namespace open
@@ -141,6 +144,7 @@ OpenHttpAgent::Client::Client()
     isOpenCache_ = false;
     isCreateSendFile_ = false;
     isCreateReceiveFile_ = false;
+    isSendData_ = false;
 }
 OpenHttpAgent::Client::~Client()
 {
@@ -151,6 +155,10 @@ bool OpenHttpAgent::Client::start()
     assert(sslCtx_);
     assert(request_);
     request_->clear();
+    request_->fd_ = fd_;
+    request_->pid_ = pid_;
+    request_->rep()->fd_ = fd_;
+    request_->rep()->pid_ = pid_;
     request_->setIp(clientInfo_.ip_);
     request_->port_ = clientInfo_.port_;
     request_->isHttps_ = clientInfo_.isHttps_;
@@ -185,8 +193,9 @@ void OpenHttpAgent::Client::sendClient()
         assert(false);
     }
 }
-void OpenHttpAgent::Client::sendResponse()
+void OpenHttpAgent::Client::processing()
 {
+    isSendData_ = false;
     auto& response = *request_->rep();
     if (request_->hasHeader("client"))
     {
@@ -204,9 +213,23 @@ void OpenHttpAgent::Client::sendResponse()
         request_->splitPaths();
         if (server_)
         {
-            server_->onHttp(*request_, response);
+            if (!server_->onHttp(*request_, response))
+            {
+                return;
+            }
         }
     }
+    sendResponse();
+}
+
+void OpenHttpAgent::Client::sendResponse()
+{
+    if (isSendData_)
+    {
+        return;
+    }
+    isSendData_ = true;
+    auto& response = *request_->rep();
     response.encodeRespHeader();
     buffer_.clear();
     buffer_.push(response.head_.data(), response.head_.size());
@@ -220,20 +243,8 @@ void OpenHttpAgent::Client::sendResponse()
     {
         assert(false);
     }
-
-    //buffer_.clear();
-    //buffer_.push("\r\n", strlen("\r\n"));
-    //if (buffer_.size() > 0)
-    //{
-    //    sendBuffer();
-    //}
-    //else
-    //{
-    //    assert(false);
-    //}
-
-    //OpenSocket::Instance().close(pid_, fd_);
 }
+
 void OpenHttpAgent::Client::open()
 {
     printf("OpenComHttpAgent::Client::open[%s:%d]\n", request_->ip().c_str(), request_->port_);
@@ -271,7 +282,7 @@ void OpenHttpAgent::Client::onData(const char* data, size_t size)
     if (request_->requestData(data, size))
     {
         request_->isFinish_ = true;
-        sendResponse();
+        processing();
     }
 }
 void OpenHttpAgent::Client::update(const char* data, size_t size)
@@ -482,6 +493,21 @@ void OpenHttpAgent::onMsgProto(OpenMsgProto& proto)
 
         OpenSocket::Instance().start(pid_, fd);
     }
+    else if (OpenHttpSendResponseMsg::MsgId() == proto.msg_->msgId())
+    {
+        std::shared_ptr<OpenHttpSendResponseMsg> protoMsg = std::dynamic_pointer_cast<OpenHttpSendResponseMsg>(proto.msg_);
+        if (!protoMsg)
+        {
+            assert(false);
+            return;
+        }
+        int fd = protoMsg->fd_;
+        auto iter = mapClient_.find(fd);
+        if (iter != mapClient_.end())
+        {
+            iter->second.sendResponse();
+        }
+    }
     else if (OpenHttpRegisterMsg::MsgId() == proto.msg_->msgId())
     {
         std::shared_ptr<OpenHttpRegisterMsg> protoMsg = std::dynamic_pointer_cast<OpenHttpRegisterMsg>(proto.msg_);
@@ -498,12 +524,13 @@ void OpenHttpAgent::onMsgProto(OpenMsgProto& proto)
     }
 }
 
-void OpenHttpAgent::onHttp(OpenHttpRequest& req, OpenHttpResponse& rep)
+bool OpenHttpAgent::onHttp(OpenHttpRequest& req, OpenHttpResponse& rep)
 {
     if (serverInfo_.handle_)
     {
-        serverInfo_.handle_(req, rep);
+        return serverInfo_.handle_(req, rep);
     }
+    return true;
 }
 
 void OpenHttpAgent::onSocketData(const OpenSocketMsg& msg)

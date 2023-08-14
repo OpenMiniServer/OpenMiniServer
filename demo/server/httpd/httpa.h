@@ -10,13 +10,13 @@ namespace httpa
 
 typedef open::OpenHttpRequest Req;
 typedef open::OpenHttpResponse Rep;
-typedef void(*HttpHandle)(Req* req, Rep* rep);
+typedef bool(*HttpHandle)(Req* req, Rep* rep);
 
 //Handle
 class Handle
 {
     //  /index.html
-    void OnIndex(Req* req, Rep* rep)
+    bool OnIndex(Req* req, Rep* rep)
     {
         auto html = Dom::DomCreate();
         auto& body = html->child("body");
@@ -26,10 +26,13 @@ class Handle
         std::string buffer;
         html->echo(buffer);
         rep->response(200, ".html", buffer);
+        rep->send();
+        // return false, need rep->send()
+        return false;
     }
 
     //  /api/stock
-    void OnApiStock(Req* req, Rep* rep)
+    bool OnApiStock(Req* req, Rep* rep)
     {
         //{
         //    "code": "xxxxx",
@@ -54,9 +57,11 @@ class Handle
 
         auto& buffer = json.encode();
         rep->response(200, ".json", buffer);
+        // return true, don't need rep->send();
+        return true;
     }
 
-    typedef void (Handle::* HttpCall)(Req* req, Rep* rep);
+    typedef bool (Handle::* HttpCall)(Req* req, Rep* rep);
     std::unordered_map<std::string, HttpCall> mapRouteHandles;
 public:
     Handle()
@@ -67,7 +72,7 @@ public:
     }
 
     ~Handle() { }
-    void onCallBack(Req* req, Rep* rep)
+    bool onCallBack(Req* req, Rep* rep)
     {
         printf("HTTP visit:%s:%d %s \n", req->ip().data(), req->port_, req->url_.data());
         if (req->url_ == "robots.txt")
@@ -75,7 +80,7 @@ public:
             rep->body_ = "User-agent: *\nDisallow: / \n";
             rep->code_ = 200;
             rep->ctype_ = "text/plain;charset=utf-8";
-            return;
+            return true;
         }
         HttpCall handle = 0;
         auto iter = mapRouteHandles.find(req->path_);
@@ -87,7 +92,7 @@ public:
         {
             handle = mapRouteHandles["/"];
         }
-        (this->*handle)(req, rep);
+        return (this->*handle)(req, rep);
     }
 };
 
@@ -106,9 +111,9 @@ public:
 	}
 
 	virtual void onStart() {}
-	virtual void onHttp(open::OpenHttpRequest& req, open::OpenHttpResponse& rep)
+	virtual bool onHttp(open::OpenHttpRequest& req, open::OpenHttpResponse& rep)
 	{
-		handle_.onCallBack(&req, &rep);
+		return handle_.onCallBack(&req, &rep);
 	}
 protected:
 	Handle handle_;

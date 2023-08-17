@@ -31,7 +31,7 @@ public:
     uint16_t month_;  // 1-12
     uint32_t year_;   // 1970 - 2100
     uint64_t unixtime_;
-    uint16_t timezone_; // -17 - 17
+    int16_t timezone_; // -17 - 17
 
     OpenTime();
     OpenTime(int64_t unixtime, int timezone = OPENTIME_TIMEZONE);
@@ -81,7 +81,7 @@ public:
     void addQuarter(int quarter = 1);
     bool isQuarterLastDay();
 
-    inline uint16_t timezone() { return timezone_; }
+    inline int16_t timezone() { return timezone_; }
     void setTimezone(int timezone = OPENTIME_TIMEZONE);
 
     // 1678715100 => 2023-05-13 21:45:00

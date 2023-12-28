@@ -681,7 +681,7 @@ int64_t OpenTime::MilliUnixtime()
 #else
     struct timeval tv;
     ::gettimeofday(&tv, NULL);
-    int64_t milliSecond = tv.tv_sec * 1000 + tv.tv_usec;
+    int64_t milliSecond = tv.tv_sec * 1000 + tv.tv_usec/1000;
     return milliSecond;
 #endif
 }

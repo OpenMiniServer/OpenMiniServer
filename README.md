@@ -1,4 +1,5 @@
 ## This project is abandoned, please switch to XServer. https://github.com/xserver-mini/xserver
+此项目已经废弃。请转到XServer项目。
 
 ## OpenMiniServer
 OpenMiniServer is an ultra-mini, ultra-easy-to-use C++ high concurrency cross-platform server framework. 
